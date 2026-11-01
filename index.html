@@ -122,6 +122,10 @@
   .stepper{display:flex;align-items:center;gap:8px;margin-top:10px}
   .stepper button{background:#F2F4F3;color:var(--ink);font-size:15px;padding:8px 14px;min-height:40px;border-radius:10px}
 
+  .banner.upd{background:var(--ink);color:#fff;border:none;align-items:center}
+  .banner.upd .txt{font-size:14px;line-height:1.5}
+  .banner.upd button{background:var(--acc);color:#fff;font-size:14px;font-weight:600;
+    padding:9px 16px;min-height:40px;border-radius:10px;flex:none}
   .toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%);background:var(--ink);
     color:#fff;padding:10px 18px;border-radius:20px;font-size:14px;opacity:0;pointer-events:none;
     transition:.25s;z-index:200;white-space:nowrap}
@@ -142,6 +146,11 @@
 </style>
 </head>
 <body>
+
+<div class="banner upd" id="bUpd" style="display:none">
+  <div class="txt" id="updTxt">有新版本</div>
+  <button onclick="doUpdate()">更新</button>
+</div>
 
 <div class="banner guide" id="bGuide">
   <div class="txt">
@@ -195,7 +204,7 @@
       </div>
       <input type="file" id="imp" accept="application/json" style="display:none" onchange="importData(this)">
     </div>
-    <div style="text-align:center;color:#CFCBC4;font-size:11px;padding:10px 0 24px">v4</div>
+    <div style="text-align:center;color:#CFCBC4;font-size:11px;padding:10px 0 24px">v6</div>
   </section>
 </main>
 
@@ -746,11 +755,41 @@ document.querySelectorAll('.mask').forEach(m=>{
   m.addEventListener('click', e=>{ if(e.target === m) m.classList.remove('on'); });
 });
 
+/* ---------- 自动检查新版本（换 URL 不换容器，数据不丢） ---------- */
+const APP_V = 6;
+let newestV = 0;
+
+function checkVersion(){
+  try{
+    fetch('version.json?t=' + Date.now(), { cache: 'no-store' })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        if(!d || typeof d.v !== 'number') return;
+        newestV = d.v;
+        const bar = document.getElementById('bUpd');
+        if(d.v > APP_V){
+          document.getElementById('updTxt').textContent = '有新版本 v' + d.v + '，点更新';
+          bar.style.display = 'flex';
+        }
+        if(d.v > APP_V) return;
+      })
+      .catch(()=>{});
+  }catch(e){}
+}
+function doUpdate(){
+  // 同源换 URL：缓存会失效，但 localStorage 属于同一来源，数据保留
+  location.replace('./?v=' + newestV + '&t=' + Date.now());
+}
+document.addEventListener('visibilitychange', function(){
+  if(!document.hidden) checkVersion();
+});
+
 /* ---------- 启动 ---------- */
 load();
 renderList();
 checkGuide();
 setTimeout(checkTip, 400);
+checkVersion();
 </script>
 </body>
 </html>
