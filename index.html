@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#FBFAF7">
+<title>课次助手</title>
+<style>
+  :root{
+    --bg:#FBFAF7; --card:#FFFFFF; --ink:#1A2C36; --gray:#6E767C; --muted:#9A9A96;
+    --acc:#B0843E; --accbg:#F7F0E5; --line:#E8E6E0;
+    --warn:#C97B3C; --warnbg:#FBF1E7; --bad:#B4453C; --badbg:#FBEDEB; --ok:#4A7C59;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif}
+  body{padding-bottom:calc(76px + env(safe-area-inset-bottom));font-size:17px;line-height:1.5}
+  header{padding:calc(18px + env(safe-area-inset-top)) 20px 12px;display:flex;align-items:baseline;gap:10px}
+  header h1{font-size:24px;margin:0;letter-spacing:.5px}
+  header .sub{font-size:13px;color:var(--muted)}
+  main{padding:0 16px}
+  .view{display:none}
+  .view.on{display:block}
+
+  .card{background:var(--card);border-radius:16px;padding:16px 18px;margin-bottom:12px;
+    box-shadow:0 1px 3px rgba(26,44,54,.06);border:1px solid var(--line)}
+  .row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .name{font-size:20px;font-weight:600}
+  .tags{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
+  .tag{font-size:12px;padding:2px 8px;border-radius:6px;background:var(--accbg);color:#8A6425}
+  .tag.g{background:#F2F4F3;color:var(--gray)}
+  .big{font-size:34px;font-weight:700;line-height:1.1;font-variant-numeric:tabular-nums}
+  .big small{font-size:14px;font-weight:400;color:var(--muted);margin-left:4px}
+  .warn{color:var(--warn)} .bad{color:var(--bad)}
+  .price{font-size:13px;color:var(--muted);margin-top:2px}
+
+  .btns{display:flex;gap:10px;margin-top:14px}
+  button{font-family:inherit;font-size:16px;border:none;border-radius:12px;cursor:pointer;
+    padding:12px 16px;min-height:46px;transition:.15s;font-weight:500}
+  button:active{transform:scale(.97)}
+  .btn-main{flex:1;background:var(--ink);color:#fff;font-size:17px;font-weight:600}
+  .btn-ghost{background:#F2F4F3;color:var(--ink)}
+  .btn-acc{background:var(--acc);color:#fff;width:100%;margin-top:10px}
+  .btn-line{background:#fff;border:1px solid var(--line);color:var(--ink)}
+
+  nav{position:fixed;left:0;right:0;bottom:0;background:rgba(251,250,247,.96);
+    backdrop-filter:blur(10px);border-top:1px solid var(--line);
+    display:flex;padding:8px 0 calc(8px + env(safe-area-inset-bottom));z-index:50}
+  nav button{flex:1;background:none;color:var(--muted);font-size:12px;display:flex;
+    flex-direction:column;align-items:center;gap:3px;min-height:52px;justify-content:center}
+  nav button.on{color:var(--ink);font-weight:600}
+  nav .dot{width:22px;height:22px;border-radius:8px;background:#E8EAE8;display:flex;
+    align-items:center;justify-content:center;font-size:13px}
+  nav button.on .dot{background:var(--ink);color:#fff}
+
+  .empty{text-align:center;padding:56px 20px;color:var(--muted)}
+  .empty p{margin:0 0 18px;font-size:15px;line-height:1.7}
+
+  /* 弹层 */
+  .mask{position:fixed;inset:0;background:rgba(26,44,54,.42);display:none;z-index:100;
+    align-items:flex-end;justify-content:center}
+  .mask.on{display:flex}
+  .sheet{background:#fff;width:100%;max-width:560px;border-radius:20px 20px 0 0;
+    padding:22px 20px calc(22px + env(safe-area-inset-bottom));max-height:88vh;overflow:auto}
+  .sheet h2{margin:0 0 4px;font-size:20px}
+  .sheet .hint{margin:0 0 18px;font-size:14px;color:var(--muted)}
+  label{display:block;font-size:14px;color:var(--gray);margin:14px 0 6px}
+  input,select{width:100%;font-size:17px;font-family:inherit;padding:12px 14px;border-radius:12px;
+    border:1px solid var(--line);background:#FCFCFA;color:var(--ink);min-height:48px}
+  input:focus,select:focus{outline:none;border-color:var(--acc);background:#fff}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .sheet-btns{display:flex;gap:10px;margin-top:22px}
+
+  /* 复制块 */
+  .copybox{background:var(--accbg);border-radius:12px;padding:14px;margin-top:16px;
+    font-size:15px;line-height:1.6;color:#7A5A20;word-break:break-all}
+
+  /* 统计 */
+  .stats{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+  .stat{background:var(--card);border-radius:14px;padding:14px 16px;border:1px solid var(--line)}
+  .stat .k{font-size:12px;color:var(--muted);margin-bottom:4px}
+  .stat .v{font-size:26px;font-weight:700;font-variant-numeric:tabular-nums}
+  .logs{font-size:14px;color:var(--gray)}
+  .log{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--line)}
+  .log:last-child{border-bottom:none}
+  /* 顶部提示条 */
+  .banner{display:none;margin:0 16px 12px;padding:13px 14px;border-radius:14px;font-size:14px;
+    line-height:1.6;gap:10px;align-items:flex-start}
+  .banner.on{display:flex}
+  .banner .txt{flex:1}
+  .banner .x{flex:none;color:var(--muted);padding:0 4px;font-size:20px;line-height:1.1;cursor:pointer}
+  .banner.guide{background:var(--accbg);color:#7A5A20;border:1px solid #EEDFC6}
+  .banner.tip{background:var(--warnbg);color:#8A5320;border:1px solid #F0DCC6}
+  .banner strong{font-weight:600}
+  .banner .dim{opacity:.78}
+  textarea{width:100%;min-height:132px;font-family:ui-monospace,Menlo,monospace;font-size:12px;
+    padding:12px;border-radius:12px;border:1px solid var(--line);background:#FCFCFA;
+    color:var(--ink);line-height:1.5;resize:vertical}
+  .toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%);background:var(--ink);
+    color:#fff;padding:10px 18px;border-radius:20px;font-size:14px;opacity:0;pointer-events:none;
+    transition:.25s;z-index:200;white-space:nowrap}
+  .toast.on{opacity:1;bottom:104px}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>课次助手</h1>
+  <span class="sub" id="hdSub"></span>
+</header>
+
+<div class="banner guide" id="bGuide">
+  <div class="txt">
+    <strong>先把我加到桌面</strong><br>
+    iPhone：用 <b>Safari</b> 打开 → 底部「分享」→「添加到主屏幕」。
+    <span class="dim">加到桌面后，系统就不会自动清理数据了。</span>
+  </div>
+  <div class="x" onclick="hideGuide()">×</div>
+</div>
+
+<div class="banner tip" id="bTip">
+  <div class="txt" id="tipTxt">该备份了。</div>
+  <div class="x" onclick="snoozeTip()">×</div>
+</div>
+
+<main>
+  <!-- 学生列表 -->
+  <section class="view on" id="v-list">
+    <div id="listBox"></div>
+    <button class="btn-acc" onclick="openAdd()">＋ 添加学生</button>
+  </section>
+
+  <!-- 统计 -->
+  <section class="view" id="v-stats">
+    <div class="stats" id="statBox"></div>
+    <div class="card">
+      <div class="row" style="margin-bottom:10px">
+        <strong style="font-size:16px">最近记录</strong>
+        <span class="logs" id="recentCount"></span>
+      </div>
+      <div class="logs" id="recentBox"></div>
+    </div>
+    <div class="card">
+      <div class="row" style="margin-bottom:12px"><strong style="font-size:16px">数据备份</strong></div>
+      <p class="hint" style="font-size:13px;color:var(--muted);margin:0 0 12px">
+        数据存在这台设备的浏览器里。换手机或清理缓存前，请先导出备份。</p>
+      <div class="btns" style="margin-top:0">
+        <button class="btn-main" onclick="copyBackup()" style="font-size:15px">复制备份</button>
+        <button class="btn-ghost" onclick="pasteRestore()" style="font-size:15px">粘贴恢复</button>
+      </div>
+      <div class="btns" style="margin-top:10px">
+        <button class="btn-line" style="flex:1;font-size:14px" onclick="exportData()">存成文件</button>
+        <button class="btn-line" style="flex:1;font-size:14px" onclick="document.getElementById('imp').click()">从文件恢复</button>
+      </div>
+      <input type="file" id="imp" accept="application/json" style="display:none" onchange="importData(this)">
+    </div>
+  </section>
+</main>
+
+<nav>
+  <button class="on" id="navList" onclick="switchView('list')">
+    <span class="dot">生</span><span>学生</span>
+  </button>
+  <button id="navStats" onclick="switchView('stats')">
+    <span class="dot">统</span><span>统计</span>
+  </button>
+</nav>
+
+<!-- 添加/编辑学生 -->
+<div class="mask" id="mAdd">
+  <div class="sheet">
+    <h2 id="addTitle">添加学生</h2>
+    <p class="hint">填最少的几项就行，以后可以改。</p>
+    <label>学生称呼</label>
+    <input id="fName" placeholder="如：尤译 / 章安泰" autocomplete="off">
+    <div class="grid2">
+      <div>
+        <label>年级</label>
+        <select id="fGrade">
+          <option>初二</option><option>初三</option>
+          <option>高一</option><option>高二</option><option>高三</option>
+        </select>
+      </div>
+      <div>
+        <label>班型</label>
+        <select id="fType">
+          <option>一对一</option><option>三人小班</option>
+        </select>
+      </div>
+    </div>
+    <div class="grid2">
+      <div>
+        <label>单价（元/节）</label>
+        <input id="fPrice" type="number" inputmode="numeric" placeholder="450">
+      </div>
+      <div>
+        <label>购买次数</label>
+        <input id="fTotal" type="number" inputmode="numeric" placeholder="10">
+      </div>
+    </div>
+    <div class="sheet-btns">
+      <button class="btn-line" style="flex:1" onclick="closeSheet('mAdd')">取消</button>
+      <button class="btn-main" id="addSave" onclick="saveStudent()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 上课确认 -->
+<div class="mask" id="mClass">
+  <div class="sheet">
+    <h2 id="classTitle">记一次课</h2>
+    <p class="hint" id="classHint"></p>
+    <div class="sheet-btns">
+      <button class="btn-line" style="flex:1" onclick="closeSheet('mClass')">取消</button>
+      <button class="btn-main" style="flex:1" onclick="confirmClass()">确认上课</button>
+    </div>
+  </div>
+</div>
+
+<!-- 结果 + 复制提醒 -->
+<div class="mask" id="mDone">
+  <div class="sheet">
+    <h2>已记录</h2>
+    <p class="hint" id="doneHint"></p>
+    <div class="copybox" id="copyText"></div>
+    <div class="sheet-btns">
+      <button class="btn-line" style="flex:1" onclick="closeSheet('mDone')">知道了</button>
+      <button class="btn-main" style="flex:1" onclick="copyMsg()">复制这段</button>
+    </div>
+  </div>
+</div>
+
+<!-- 学生详情 -->
+<div class="mask" id="mDetail">
+  <div class="sheet">
+    <h2 id="dtName"></h2>
+    <p class="hint" id="dtMeta"></p>
+    <div id="dtBody"></div>
+    <div class="btns" style="margin-top:18px">
+      <button class="btn-ghost" style="flex:1" onclick="addPkg()">＋ 续费</button>
+      <button class="btn-ghost" style="flex:1" onclick="editStudent()">编辑</button>
+    </div>
+    <button class="btn-line" style="width:100%;margin-top:10px;color:var(--bad)"
+      onclick="removeStudent()">删除这个学生</button>
+    <div class="sheet-btns">
+      <button class="btn-line" style="width:100%" onclick="closeSheet('mDetail')">关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- 文本备份 / 恢复 -->
+<div class="mask" id="mBak">
+  <div class="sheet">
+    <h2 id="bakTitle">备份</h2>
+    <p class="hint" id="bakHint"></p>
+    <textarea id="bakText" spellcheck="false" autocapitalize="off" autocorrect="off"></textarea>
+    <div class="sheet-btns">
+      <button class="btn-line" style="flex:1" onclick="closeSheet('mBak')">关闭</button>
+      <button class="btn-main" style="flex:1" id="bakAct" onclick="bakAction()">复制</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const KEY = 'keci-helper-v1';
+let DB = { students: [] };
+let cur = null;         // 当前操作的学生 id
+let adding = false;     // 编辑模式还是新增
+
+/* ---------- 存取 ---------- */
+function load(){
+  try{
+    const raw = localStorage.getItem(KEY);
+    if(raw) DB = JSON.parse(raw);
+  }catch(e){ DB = { students: [] }; }
+  if(!DB.students) DB.students = [];
+}
+function save(){
+  try{ localStorage.setItem(KEY, JSON.stringify(DB)); }
+  catch(e){ toast('保存失败：存储空间可能已满'); }
+}
+
+/* ---------- 工具 ---------- */
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+const left = s => s.total - s.used;
+const todayStr = () => {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+};
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('on');
+  clearTimeout(t._h);
+  t._h = setTimeout(()=>t.classList.remove('on'), 1800);
+}
+
+/* ---------- 渲染列表 ---------- */
+function renderList(){
+  const box = document.getElementById('listBox');
+  const sub = document.getElementById('hdSub');
+  if(DB.students.length === 0){
+    box.innerHTML = `<div class="empty">
+      <p>还没有学生。<br>点下面的按钮加第一个。</p></div>`;
+    sub.textContent = '';
+    return;
+  }
+  const totalLeft = DB.students.reduce((a,s)=>a+Math.max(0,left(s)),0);
+  sub.textContent = `${DB.students.length} 个学生 · 共剩 ${totalLeft} 次`;
+
+  // 快用完的排前面
+  const arr = [...DB.students].sort((a,b)=>{
+    const la = left(a), lb = left(b);
+    if(la !== lb) return la - lb;
+    return (b.lastAt||'').localeCompare(a.lastAt||'');
+  });
+
+  box.innerHTML = arr.map(s=>{
+    const L = left(s);
+    const cls = L <= 0 ? 'bad' : (L <= 2 ? 'warn' : '');
+    return `<div class="card">
+      <div class="row">
+        <div>
+          <div class="name">${esc(s.name)}</div>
+          <div class="tags">
+            <span class="tag">${esc(s.grade)}</span>
+            <span class="tag g">${esc(s.type)}</span>
+            <span class="tag g">${s.price} 元/节</span>
+          </div>
+        </div>
+        <div style="text-align:right">
+          <div class="big ${cls}">${L}<small>次</small></div>
+          <div class="price">已上 ${s.used} / ${s.total}</div>
+        </div>
+      </div>
+      <div class="btns">
+        <button class="btn-main" onclick="askClass('${s.id}')"
+          ${L<=0?'style="opacity:.45"':''}>上课 +1</button>
+        <button class="btn-ghost" onclick="openDetail('${s.id}')">详情</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+/* ---------- 视图切换 ---------- */
+function switchView(v){
+  document.getElementById('v-list').classList.toggle('on', v==='list');
+  document.getElementById('v-stats').classList.toggle('on', v==='stats');
+  document.getElementById('navList').classList.toggle('on', v==='list');
+  document.getElementById('navStats').classList.toggle('on', v==='stats');
+  if(v==='stats') renderStats();
+  window.scrollTo(0,0);
+}
+
+/* ---------- 添加 / 编辑 ---------- */
+function openAdd(){
+  adding = true; cur = null;
+  document.getElementById('addTitle').textContent = '添加学生';
+  document.getElementById('fName').value = '';
+  document.getElementById('fGrade').value = '初三';
+  document.getElementById('fType').value = '三人小班';
+  document.getElementById('fPrice').value = '';
+  document.getElementById('fTotal').value = '10';
+  document.getElementById('mAdd').classList.add('on');
+  setTimeout(()=>document.getElementById('fName').focus(), 150);
+}
+function editStudent(){
+  const s = DB.students.find(x=>x.id===cur);
+  if(!s) return;
+  adding = false;
+  document.getElementById('addTitle').textContent = '编辑学生';
+  document.getElementById('fName').value = s.name;
+  document.getElementById('fGrade').value = s.grade;
+  document.getElementById('fType').value = s.type;
+  document.getElementById('fPrice').value = s.price;
+  document.getElementById('fTotal').value = s.total;
+  closeSheet('mDetail');
+  document.getElementById('mAdd').classList.add('on');
+}
+function saveStudent(){
+  const name  = document.getElementById('fName').value.trim();
+  const grade = document.getElementById('fGrade').value;
+  const type  = document.getElementById('fType').value;
+  const price = Number(document.getElementById('fPrice').value) || 0;
+  const total = Number(document.getElementById('fTotal').value) || 0;
+  if(!name){ toast('先填一下学生称呼'); return; }
+  if(total <= 0){ toast('购买次数要大于 0'); return; }
+
+  if(adding){
+    DB.students.push({
+      id: uid(), name, grade, type, price, total, used: 0,
+      lastAt: '', createdAt: todayStr(), logs: []
+    });
+  }else{
+    const s = DB.students.find(x=>x.id===cur);
+    if(s){ s.name=name; s.grade=grade; s.type=type; s.price=price; s.total=total; }
+  }
+  save(); closeSheet('mAdd'); renderList();
+  toast(adding ? '已添加' : '已保存');
+}
+
+/* ---------- 上课 ---------- */
+function askClass(id){
+  cur = id;
+  const s = DB.students.find(x=>x.id===id);
+  if(!s) return;
+  const L = left(s);
+  if(L <= 0){ toast('这个学生次数用完了，先续费'); return; }
+  document.getElementById('classTitle').textContent = s.name + ' · 记一次课';
+  document.getElementById('classHint').textContent =
+    `这次记完，还剩 ${L-1} 次。确认已经上完了吗？`;
+  document.getElementById('mClass').classList.add('on');
+}
+function confirmClass(){
+  const s = DB.students.find(x=>x.id===cur);
+  if(!s) return;
+  s.used += 1;
+  s.lastAt = todayStr();
+  s.logs.unshift({ t: new Date().toISOString(), k: 'class' });
+  save();
+  closeSheet('mClass');
+
+  const L = left(s);
+  const msg = `今天这节课（第 ${s.used} 次）上完啦，还剩 ${L} 次。`;
+  document.getElementById('doneHint').textContent = s.name + ' · 已记录';
+  document.getElementById('copyText').textContent = msg;
+  document.getElementById('mDone').classList.add('on');
+  renderList();
+}
+function copyMsg(){
+  const t = document.getElementById('copyText').textContent;
+  const done = ()=>{ toast('已复制，去微信粘贴'); closeSheet('mDone'); };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(t).then(done).catch(()=>fallbackCopy(t,done));
+  }else fallbackCopy(t,done);
+}
+function fallbackCopy(t, cb){
+  const ta = document.createElement('textarea');
+  ta.value = t; ta.style.position='fixed'; ta.style.top='-1000px';
+  document.body.appendChild(ta); ta.select();
+  try{ document.execCommand('copy'); cb(); }catch(e){ toast('复制失败，请长按文字手动复制'); }
+  document.body.removeChild(ta);
+}
+
+/* ---------- 详情 ---------- */
+function openDetail(id){
+  cur = id;
+  const s = DB.students.find(x=>x.id===id);
+  if(!s) return;
+  document.getElementById('dtName').textContent = s.name;
+  document.getElementById('dtMeta').textContent =
+    `${s.grade} · ${s.type} · ${s.price} 元/节`;
+  const L = left(s);
+  const cls = L<=0?'bad':(L<=2?'warn':'');
+  const recent = (s.logs||[]).slice(0,8).map(l=>{
+    const d = new Date(l.t);
+    const str = `${d.getMonth()+1}月${d.getDate()}日 ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+    return `<div class="log"><span>上课</span><span>${str}</span></div>`;
+  }).join('') || `<div class="log" style="color:var(--muted)">还没有记录</div>`;
+
+  document.getElementById('dtBody').innerHTML = `
+    <div class="card" style="margin:14px 0;box-shadow:none">
+      <div class="row">
+        <div><div class="k" style="font-size:12px;color:var(--muted)">剩余次数</div>
+          <div class="big ${cls}">${L}<small>次</small></div></div>
+        <div style="text-align:right">
+          <div class="price">已上 ${s.used} / 共 ${s.total} 次</div>
+          <div class="price">课包金额 ${s.price * s.total} 元</div>
+        </div>
+      </div>
+    </div>
+    <div class="logs">${recent}</div>`;
+  document.getElementById('mDetail').classList.add('on');
+}
+function addPkg(){
+  const s = DB.students.find(x=>x.id===cur);
+  if(!s) return;
+  const n = prompt('加几次课？（续费常见是 10 次）', '10');
+  if(n === null) return;
+  const num = Number(n);
+  if(!num || num <= 0){ toast('请输入大于 0 的次数'); return; }
+  s.total += num;
+  s.logs.unshift({ t: new Date().toISOString(), k: 'pkg', n: num });
+  save();
+  closeSheet('mDetail');
+  renderList();
+  toast(`已加 ${num} 次`);
+}
+function removeStudent(){
+  const s = DB.students.find(x=>x.id===cur);
+  if(!s) return;
+  if(!confirm(`确定删除「${s.name}」吗？\n记录会一起删掉，不能撤销。`)) return;
+  DB.students = DB.students.filter(x=>x.id!==cur);
+  save(); closeSheet('mDetail'); renderList(); toast('已删除');
+}
+
+/* ---------- 统计 ---------- */
+function renderStats(){
+  const now = new Date();
+  const ym = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
+  let monthCount = 0, monthMoney = 0;
+  const recent = [];
+  DB.students.forEach(s=>{
+    (s.logs||[]).forEach(l=>{
+      if(l.k !== 'class') return;
+      const d = new Date(l.t);
+      const key = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+      if(key === ym){ monthCount++; monthMoney += (s.price||0); }
+      recent.push({ t:l.t, name:s.name, price:s.price });
+    });
+  });
+  recent.sort((a,b)=> b.t.localeCompare(a.t));
+
+  const totalLeft = DB.students.reduce((a,s)=>a+Math.max(0,left(s)),0);
+  const lowCount = DB.students.filter(s=>left(s) <= 2).length;
+
+  document.getElementById('statBox').innerHTML = `
+    <div class="stat"><div class="k">本月已上</div><div class="v">${monthCount}<small style="font-size:13px;color:var(--muted)"> 节</small></div></div>
+    <div class="stat"><div class="k">本月课消收入</div><div class="v">${monthMoney.toLocaleString()}<small style="font-size:13px;color:var(--muted)"> 元</small></div></div>
+    <div class="stat"><div class="k">在册学生</div><div class="v">${DB.students.length}<small style="font-size:13px;color:var(--muted)"> 人</small></div></div>
+    <div class="stat"><div class="k">快用完 / 共剩</div><div class="v">${lowCount}<span style="font-size:15px;color:var(--muted)"> / ${totalLeft}次</span></div></div>`;
+
+  document.getElementById('recentCount').textContent = recent.length ? `近 ${Math.min(recent.length,12)} 条` : '';
+  document.getElementById('recentBox').innerHTML = recent.slice(0,12).map(r=>{
+    const d = new Date(r.t);
+    const str = `${d.getMonth()+1}/${d.getDate()}`;
+    return `<div class="log"><span>${esc(r.name)}</span><span>${str} · ${r.price} 元</span></div>`;
+  }).join('') || `<div class="log" style="color:var(--muted)">还没有上课记录</div>`;
+}
+
+/* ---------- 备份 ---------- */
+function exportData(){
+  const blob = new Blob([JSON.stringify(DB, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `课次备份-${todayStr()}.json`;
+  a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 3000);
+  markBackup();
+  toast('已导出');
+}
+function importData(input){
+  const f = input.files[0];
+  if(!f) return;
+  const rd = new FileReader();
+  rd.onload = () => {
+    try{
+      const d = JSON.parse(rd.result);
+      if(!d.students || !Array.isArray(d.students)) throw 0;
+      if(!confirm('导入会覆盖当前所有数据，确定吗？')) return;
+      DB = d; save(); renderList(); renderStats(); toast('已导入');
+    }catch(e){ toast('文件格式不对'); }
+  };
+  rd.readAsText(f);
+  input.value = '';
+}
+
+/* ---------- 弹层 ---------- */
+function closeSheet(id){ if(id) document.getElementById(id).classList.remove('on'); }
+document.querySelectorAll('.mask').forEach(m=>{
+  m.addEventListener('click', e=>{ if(e.target === m) m.classList.remove('on'); });
+});
+
+/* ---------- 桌面安装引导 & 备份提醒 ---------- */
+const META = 'keci-meta-v1';
+function meta(){ try{ return JSON.parse(localStorage.getItem(META)) || {}; }catch(e){ return {}; } }
+function setMeta(o){ try{ localStorage.setItem(META, JSON.stringify(Object.assign(meta(), o))); }catch(e){} }
+function daysSince(t){ if(!t) return 99999; return Math.floor((Date.now() - t) / 86400000); }
+
+function isStandalone(){
+  return window.navigator.standalone === true ||
+    (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+}
+function checkGuide(){
+  const m = meta();
+  if(!isStandalone() && !m.guideHidden) document.getElementById('bGuide').classList.add('on');
+}
+function hideGuide(){
+  setMeta({ guideHidden: true });
+  document.getElementById('bGuide').classList.remove('on');
+}
+function checkTip(){
+  const d = daysSince(meta().lastBackupAt);
+  if(d >= 14 && DB.students.length > 0){
+    const box = document.getElementById('tipTxt');
+    if(d > 9000) box.innerHTML = '还没有备份过。<br>停课放假前，请一定备份一次。';
+    else box.innerHTML = '已经 <b>' + (d > 900 ? '很久' : d + ' 天') + '</b>没备份了。<br>停课放假前，请一定备份一次。';
+    document.getElementById('bTip').classList.add('on');
+  }
+}
+function snoozeTip(){
+  setMeta({ tipSnoozedAt: Date.now() });
+  document.getElementById('bTip').classList.remove('on');
+}
+function markBackup(){
+  setMeta({ lastBackupAt: Date.now() });
+  document.getElementById('bTip').classList.remove('on');
+}
+
+/* ---------- 文本备份 / 恢复 ---------- */
+let bakMode = 'copy';
+function copyBackup(){
+  bakMode = 'copy';
+  document.getElementById('bakTitle').textContent = '复制备份';
+  document.getElementById('bakHint').textContent =
+    '点下面「复制」，粘贴到微信收藏或备忘录里存着。恢复时用「粘贴恢复」。';
+  const ta = document.getElementById('bakText');
+  ta.value = JSON.stringify(DB);
+  ta.readOnly = true;
+  document.getElementById('bakAct').textContent = '复制';
+  document.getElementById('mBak').classList.add('on');
+}
+function pasteRestore(){
+  bakMode = 'restore';
+  document.getElementById('bakTitle').textContent = '粘贴恢复';
+  document.getElementById('bakHint').textContent =
+    '把之前备份的整段文字粘进来，点「恢复」。会覆盖当前数据。';
+  const ta = document.getElementById('bakText');
+  ta.value = '';
+  ta.readOnly = false;
+  document.getElementById('bakAct').textContent = '恢复';
+  document.getElementById('mBak').classList.add('on');
+  setTimeout(()=>ta.focus(), 150);
+}
+function bakAction(){
+  const ta = document.getElementById('bakText');
+  if(bakMode === 'copy'){
+    const t = ta.value;
+    const ok = ()=>{ markBackup(); toast('已复制，去粘贴保存'); closeSheet('mBak'); };
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      ta.select();
+      navigator.clipboard.writeText(t).then(ok).catch(()=>fallbackCopy(t, ok));
+    }else fallbackCopy(t, ok);
+    return;
+  }
+  let d;
+  try{ d = JSON.parse(ta.value.trim()); }catch(e){ toast('这段内容不是有效的备份'); return; }
+  if(!d || !Array.isArray(d.students)){ toast('这段内容不是有效的备份'); return; }
+  if(!confirm('恢复会覆盖当前所有数据，确定吗？')) return;
+  DB = d;
+  save(); renderList(); renderStats();
+  closeSheet('mBak');
+  toast('已恢复');
+}
+
+/* ---------- 启动 ---------- */
+load();
+renderList();
+checkGuide();
+setTimeout(checkTip, 400);
+</script>
+</body>
+</html>
