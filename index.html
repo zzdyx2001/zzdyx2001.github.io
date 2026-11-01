@@ -2,7 +2,8 @@
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="format-detection" content="telephone=no,email=no,address=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="theme-color" content="#FBFAF7">
@@ -18,8 +19,20 @@
     --warn:#C97B3C; --warnbg:#FBF1E7; --bad:#B4453C; --badbg:#FBEDEB; --ok:#3F7A54;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);
-    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif}
+  html,body{
+    margin:0;padding:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    /* 关掉双击放大 / 长按选择 / 橡皮筋，让它在手机上有 App 的手感 */
+    touch-action:manipulation;
+    -webkit-text-size-adjust:100%;
+    text-size-adjust:100%;
+    -webkit-user-select:none;
+    user-select:none;
+    -webkit-touch-callout:none;
+    overscroll-behavior-y:none;
+  }
+  input,textarea{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}
+  button,a,nav,.card,.tag{ touch-action:manipulation }
   body{padding-bottom:calc(76px + env(safe-area-inset-bottom));font-size:17px;line-height:1.5}
   header{padding:calc(18px + env(safe-area-inset-top)) 20px 12px;display:flex;align-items:baseline;gap:10px}
   header h1{font-size:24px;margin:0;letter-spacing:.5px}
@@ -44,8 +57,8 @@
   button{font-family:inherit;font-size:16px;border:none;border-radius:12px;cursor:pointer;
     padding:12px 16px;min-height:46px;transition:.15s;font-weight:500}
   button:active{transform:scale(.97)}
-  .btn-main{flex:1.6;background:var(--ink);color:#fff;font-size:17px;font-weight:600}
-  .btn-ghost{flex:1;background:#F2F4F3;color:var(--ink)}
+  .btn-main{flex:1.5;background:var(--ink);color:#fff;font-size:17px;font-weight:600}
+  .btn-ghost{flex:1;background:#F2F4F3;color:var(--ink);font-size:15px}
   .btn-acc{background:var(--acc);color:#fff;width:100%;margin-top:10px}
   .btn-line{background:#fff;border:1px solid var(--line);color:var(--ink)}
 
